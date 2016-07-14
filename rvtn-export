@@ -1,0 +1,139 @@
+Sub tipexport()
+
+Dim PD As Worksheet
+Dim S As Worksheet
+Dim CTIPS As Worksheet
+Dim Xport As Worksheet
+Dim MWC As Worksheet
+Dim PDlastrow As Long
+Dim Slastrow As Long
+Dim S2lastrow As Long
+Dim Clastrow As Long
+Dim Xlastrow As Long
+Dim Mlastrow As Long
+Dim fnd As Variant
+Dim rplc As Variant
+Dim Firstrow As Long
+Dim Lastrow As Long
+Dim Lrow As Long
+
+Application.ScreenUpdating = False
+
+Set PD = ThisWorkbook.Worksheets("insert detail")
+Set S = ThisWorkbook.Worksheets("stafflist")
+Set CTIPS = ThisWorkbook.Worksheets("CTIPS")
+Set Xport = ThisWorkbook.Worksheets("export")
+Set MWC = ThisWorkbook.Worksheets("minwagechk")
+
+If Not IsEmpty(PD.Range("F12")) Then
+    ThisWorkbook.Worksheets("insert detail").DrawingObjects.Delete
+    PD.Cells.Select
+    Selection.MergeCells = False
+    PD.Columns("B").AutoFit
+    PD.Range("F12").ClearContents
+    PD.Columns("B").Copy Destination:=S.Columns("B")
+    PD.Columns("F").Copy Destination:=S.Columns("A")
+    S.Activate
+    S.Cells.VerticalAlignment = xlCenter
+    Slastrow = S.Range("A" & S.Rows.Count).End(xlUp).Row
+    S.Range("A2:B" & Slastrow).SpecialCells(xlCellTypeBlanks).Delete
+    S.Range("A1") = "ID"
+    S.Columns("A:A").HorizontalAlignment = xlCenter
+    S.Range("B1") = "Name"
+    fnd = "Emp#:"
+    rplc = ""
+    S.Range("A:A").Replace What:=fnd, Replacement:=rplc, LookAt:=xlPart, MatchCase:=False
+    S.Range("A1:B1").Font.Bold = True
+    S2lastrow = S.Range("B" & S.Rows.Count).End(xlUp).Row
+    With S.Range("A2:A" & S2lastrow)
+        .FormatConditions.Delete
+        .Select
+        .FormatConditions.Add (xlBlanksCondition)
+        .Interior.Color = RGB(64, 224, 255)
+    End With
+End If
+
+S2lastrow = S.Range("B" & S.Rows.Count).End(xlUp).Row
+S.Range("A2:A" & S2lastrow).Select
+    For Each cell In Selection
+        If IsEmpty(cell) Then
+            If MsgBox("Please fill in the missing employee IDs and restart the macro." & (Chr(13)) & (Chr(13)) & "Thank you!", vbCritical, "Dang.") = vbOK Then
+                Exit Sub
+            End If
+        Exit For
+        End If
+    Next
+
+PD.Activate
+PDlastrow = PD.Range("V" & PD.Rows.Count).End(xlUp).Row
+
+PD.Range("B14:B" & PDlastrow).SpecialCells(xlCellTypeBlanks).Select
+Selection.FormulaR1C1 = "=R[-1]C"
+
+CTIPS.Activate
+CTIPS.Range("A2:A" & S2lastrow).Formula = "=stafflist!B2"
+Clastrow = CTIPS.Range("A" & CTIPS.Rows.Count).End(xlUp).Row
+CTIPS.Range("A2:A" & Clastrow).Copy
+CTIPS.Range("A2:A" & Clastrow).PasteSpecial xlPasteValues
+CTIPS.Columns("A").AutoFit
+CTIPS.Range("B2:AR" & Clastrow).Formula = "=SUMIFS('insert detail'!$AM:$AM,'insert detail'!$B:$B,$A2,'insert detail'!$P:$P,B$1)"
+CTIPS.Range("B:AR").Copy
+CTIPS.Range("B:AR").PasteSpecial xlPasteValuesAndNumberFormats
+Application.CutCopyMode = False
+
+S.Activate
+S.Range("A2:A" & S2lastrow).Copy
+
+Xport.Activate
+Xport.Range("A:A").PasteSpecial xlPasteValuesAndNumberFormats
+Xlastrow = Xport.Range("A" & Xport.Rows.Count).End(xlUp).Row
+Xport.Range("B1:B" & Xlastrow) = "E"
+Xport.Range("C1:C" & Xlastrow) = "CTIPS"
+Xport.Range("E1:E" & Slastrow).Formula = "=SUM(CTIPS!$B2:$AR2)"
+Xport.Range("E:E").Copy
+Xport.Range("E:E").PasteSpecial xlPasteValuesAndNumberFormats
+Application.CutCopyMode = False
+With Xport
+    .Select
+    Firstrow = 1
+    Lastrow = .Cells(.Rows.Count, "A").End(xlUp).Row
+    For Lrow = Lastrow To Firstrow Step -1
+        With .Cells(Lrow, "E")
+                If Not IsError(.Value) Then
+                If .Value = "0" Then .EntireRow.ClearContents
+            End If
+        End With
+    Next Lrow
+End With
+Xport.Columns("A:M").Sort key1:=Range("A1"), _
+    order1:=xlAscending, Header:=xlNo
+Xport.Columns("A:M").AutoFit
+
+S.Activate
+S.Range("B1:B" & S2lastrow).Copy
+
+MWC.Activate
+MWC.Range("A:A").PasteSpecial xlPasteValuesAndNumberFormats
+Application.CutCopyMode = False
+MWC.Columns("A").AutoFit
+Mlastrow = MWC.Range("A" & MWC.Rows.Count).End(xlUp).Row
+MWC.Range("C2:C" & Mlastrow).Formula = "=SUMIFS('insert detail'!$T:$T,'insert detail'!$K:$K,""Total "",'insert detail'!$B:$B,A2)"
+MWC.Range("D2:D" & Mlastrow).Formula = "=SUMIFS('insert detail'!$X:$X,'insert detail'!$K:$K,""Total "",'insert detail'!$B:$B,A2)"
+MWC.Range("E2:E" & Mlastrow).Formula = "=SUMIFS('insert detail'!$AE:$AE,'insert detail'!$K:$K,""Total "",'insert detail'!$B:$B,A2)"
+MWC.Range("F2:F" & Mlastrow).Formula = "=SUMIFS('insert detail'!$AM:$AM,'insert detail'!$K:$K,""Total "",'insert detail'!$B:$B,A2)"
+MWC.Range("B2:B" & Mlastrow).Formula = "=IF((((E2+F2)-((C2*7.25)+(D2*10.875)))<0),""NO"",""YES"")"
+MWC.Columns("B:F").HorizontalAlignment = xlCenter
+With MWC.Range("B:B")
+    .FormatConditions.Delete
+    .Select
+    .FormatConditions.Add Type:=xlExpression, Formula1:="NO"
+    .FormatConditions(1).Interior.Color = RGB(255, 96, 96)
+End With
+MWC.Range("B2:F" & Mlastrow).Copy
+MWC.Range("B2:F" & Mlastrow).PasteSpecial xlPasteValuesAndNumberFormats
+
+ThisWorkbook.Worksheets("double check").Activate
+
+Application.ScreenUpdating = True
+
+End Sub
