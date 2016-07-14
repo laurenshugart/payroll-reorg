@@ -48,8 +48,9 @@ If Not IsEmpty(PD.Range("F12")) Then
     With S.Range("A2:A" & S2lastrow)
         .FormatConditions.Delete
         .Select
-        .FormatConditions.Add (xlBlanksCondition)
-        .Interior.Color = RGB(64, 224, 255)
+        .FormatConditions.Add Type:=xlBlanksCondition
+        .FormatConditions.Interior.Color = RGB(64, 224, 255)
+        .FormatConditions.StopIfTrue = False
     End With
 End If
 
