@@ -1,0 +1,68 @@
+Sub payroll-reorg()
+'
+    Dim Codes As Worksheet, Export As Worksheet, Staff As Worksheet
+    Dim c As Range
+    Dim rng As Range
+    Dim rng2 As Range
+    Dim Last As Range
+    Dim Firstrow As Long
+    Dim Lastrow As Long
+    Dim Lrow As Long
+    
+    Application.ScreenUpdating = False
+
+    Set Export = Workbooks("Payroll Export 2.xlsm").Worksheets("insert export")
+    Set Codes = Workbooks("Payroll Export 2.xlsm").Worksheets("job codes")
+    Set Staff = Workbooks("Payroll Export 2.xlsm").Worksheets("staff")
+ 
+With Codes
+  Set rng = .Range("A2:A" & .Cells(.Rows.Count, "A").End(xlUp).Row)
+  Set rng2 = .Range("B2:B" & .Cells(.Rows.Count, "B").End(xlUp).Row)
+End With
+ 
+With Export
+   With Intersect(.UsedRange, .Range("H:H"))
+       For Each c In rng
+           .Replace c.Value, c.Offset(, 1).Value, xlPart, MatchCase:=True
+       Next c
+   End With
+End With
+
+Export.Columns("H:H").Copy Destination:=Range("M1")
+
+With Export
+   With Intersect(.UsedRange, .Range("H:H"))
+       For Each c In rng2
+           .Replace c.Value, c.Offset(, 1).Value, xlPart, MatchCase:=True
+       Next c
+   End With
+End With
+
+With Export
+    .Select
+   
+    Firstrow = 1
+    Lastrow = .Cells(.Rows.Count, "C").End(xlUp).Row
+
+    For Lrow = Lastrow To Firstrow Step -1
+        With .Cells(Lrow, "C")
+                If Not IsError(.Value) Then
+                If .Value = "TIPS" Then .EntireRow.ClearContents
+            End If
+        End With
+    Next Lrow
+End With
+
+Export.Range("A1") = "Index"
+Export.Columns("A:M").Sort key1:=Range("A1"), _
+    order1:=xlAscending, Header:=xlNo
+
+Application.ScreenUpdating = True
+
+If Not ThisWorkbook.Saved Then
+    If MsgBox("Please save this file before continuing.", vbOKOnly) = vbOK Then
+        ThisWorkbook.SaveAs
+    End If
+End If
+
+End Sub
