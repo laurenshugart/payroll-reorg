@@ -45,12 +45,11 @@ If Not IsEmpty(PD.Range("F12")) Then
     S.Range("A:A").Replace What:=fnd, Replacement:=rplc, LookAt:=xlPart, MatchCase:=False
     S.Range("A1:B1").Font.Bold = True
     S2lastrow = S.Range("B" & S.Rows.Count).End(xlUp).Row
-    With S.Range("A2:A" & S2lastrow)
-        .FormatConditions.Delete
-        .Select
-        .FormatConditions.Add Type:=xlBlanksCondition
-        .FormatConditions.Interior.Color = RGB(64, 224, 255)
-        .FormatConditions.StopIfTrue = False
+    S.Range("A2:A" & S2lastrow).FormatConditions.Delete
+    With S.Range("A2:A" & S2lastrow).FormatConditions _
+        .Add(xlBlanksCondition)
+        .Interior.Color = RGB(64, 224, 255)
+        .StopIfTrue = False
     End With
 End If
 
